@@ -477,8 +477,10 @@ class SetCriterion(nn.Module):
         tgt_idx = torch.cat(tgt_idx)
 
         tgt_pos = positive_map[tgt_idx]
-        target_sim = torch.zeros_like(logits)
+        target_sim = torch.zeros_like(logits).float() #EDITED HERE
         target_sim[:, :, -1] = 1
+
+        # print(tgt_pos.dtype, target_sim.dtype)
         target_sim[src_idx] = tgt_pos
 
         loss_ce = -(logits * target_sim).sum(-1)
@@ -594,12 +596,19 @@ class SetCriterion(nn.Module):
         loss_bbox = F.l1_loss(src_boxes, target_boxes, reduction="none")
 
         losses = {}
-        losses["loss_bbox"] = loss_bbox.sum() / num_boxes
+        
+        # EDITED
+        # losses["loss_bbox"] = loss_bbox.sum() / num_boxes
+        losses['loss_bbox'] = loss_bbox.sum() / num_boxes if num_boxes > 0 else loss_bbox.sum()
 
         loss_giou = 1 - torch.diag(
             box_ops.generalized_box_iou(box_ops.box_cxcywh_to_xyxy(src_boxes), box_ops.box_cxcywh_to_xyxy(target_boxes))
         )
-        losses["loss_giou"] = loss_giou.sum() / num_boxes
+
+        #EDITED
+        # losses["loss_giou"] = loss_giou.sum() / num_boxes
+        losses['loss_giou'] = loss_giou.sum() / num_boxes if num_boxes > 0 else loss_giou.sum()
+
         return losses
 
     def loss_masks(self, outputs, targets, positive_map, indices, num_boxes):
@@ -664,6 +673,7 @@ class SetCriterion(nn.Module):
         outputs_without_aux = {k: v for k, v in outputs.items() if k != "aux_outputs"}
 
         # Retrieve the matching between the outputs of the last layer and the targets
+        
         indices = self.matcher(outputs_without_aux, targets, positive_map)
 
         # Compute the average number of target boxes accross all nodes, for normalization purposes

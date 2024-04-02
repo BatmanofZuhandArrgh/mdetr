@@ -1,0 +1,7 @@
+Namespace(device='cpu', model_path='weights/baseline_full_model.pth', quantization='fp32')
+139.3125
+['data/val/100652400.jpg', 'data/val/1011572216.jpg', 'data/val/1012150929.jpg', 'data/val/101262930.jpg', 'data/val/1015118661.jpg', 'data/val/101669240.jpg', 'data/val/1016887272.jpg', 'data/val/101958970.jpg', 'data/val/102851549.jpg', 'data/val/104285082.jpg', 'data/val/1053116826.jpg', 'data/val/1066831905.jpg', 'data/val/1073444492.jpg', 'data/val/1077546505.jpg', 'data/val/1089755335.jpg', 'data/val/1097710887.jpg', 'data/val/1100214449.jpg', 'data/val/110802332.jpg', 'data/val/110820212.jpg', 'data/val/1112334131.jpg', 'data/val/1117972841.jpg', 'data/val/1121053156.jpg', 'data/val/113032513.jpg', 'data/val/1131932671.jpg', 'data/val/1138784872.jpg', 'data/val/1147391743.jpg', 'data/val/1153704539.jpg', 'data/val/11551286.jpg', 'data/val/1157215900.jpg', 'data/val/1160441615.jpg']
+caption:  People and blue stuff
+Inference time:  2.293945892651876 s/image
+CPU mem footprint:  2.1498870849609375 GB
+GPU mem footprint:  0.0 GB

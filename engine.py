@@ -161,7 +161,7 @@ def evaluate(
         else:
             memory_cache = model(samples, captions, encode_and_save=True)
             outputs = model(samples, captions, encode_and_save=False, memory_cache=memory_cache)
-
+        
         loss_dict = {}
         if criterion is not None:
             loss_dict.update(criterion(outputs, targets, positive_map))

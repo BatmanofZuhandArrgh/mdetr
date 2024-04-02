@@ -16,11 +16,12 @@ import datasets.transforms as T
 
 
 class ModulatedDetection(torchvision.datasets.CocoDetection):
-    def __init__(self, img_folder, ann_file, transforms, return_masks, return_tokens, tokenizer, is_train=False):
+    def __init__(self, img_folder, ann_file, transforms, return_masks, return_tokens, tokenizer, quantization, is_train=False):
         super(ModulatedDetection, self).__init__(img_folder, ann_file)
         self._transforms = transforms
         self.prepare = ConvertCocoPolysToMask(return_masks, return_tokens, tokenizer=tokenizer)
         self.is_train = is_train
+        self.quantization = quantization
 
     def __getitem__(self, idx):
         img, target = super(ModulatedDetection, self).__getitem__(idx)
@@ -42,6 +43,9 @@ class ModulatedDetection(torchvision.datasets.CocoDetection):
             target["positive_map_eval"] = create_positive_map(tokenized, coco_img["tokens_positive_eval"])
             target["nb_eval"] = len(target["positive_map_eval"])
 
+        if self.quantization == 'fp16':
+            img = torch.tensor(img, dtype=torch.float16)
+            
         return img, target
 
 

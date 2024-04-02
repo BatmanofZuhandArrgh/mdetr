@@ -17,3 +17,7 @@ not_tracked_dir/
 .idea/*
 *.ext3
 flickr/*
+data/*
+weights/*
+flickr30k
+mdetr_annotations/*

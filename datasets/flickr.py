@@ -37,6 +37,7 @@ def build(image_set, args):
         return_masks=False,
         return_tokens=True,  # args.contrastive_align_loss,
         tokenizer=tokenizer,
-        is_train=image_set=="train"
+        is_train=image_set=="train",
+        quantization = args.quantization
     )
     return dataset

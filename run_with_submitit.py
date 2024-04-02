@@ -34,8 +34,8 @@ def parse_args():
 
 def get_shared_folder(args) -> Path:
     user = os.getenv("USER")
-    if Path("/checkpoint/").is_dir():
-        p = Path(f"/checkpoint/{user}/experiments")
+    if Path("/home/anhnguyen/Documents/mdetr/checkpoint/").is_dir():
+        p = Path(f"/home/anhnguyen/Documents/mdetr/checkpoint/{user}/experiments")
         p.mkdir(exist_ok=True)
         return p
     raise RuntimeError("No shared folder available")

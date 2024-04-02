@@ -273,6 +273,10 @@ def get_args_parser():
     # Distributed training parameters
     parser.add_argument("--world-size", default=1, type=int, help="number of distributed processes")
     parser.add_argument("--dist-url", default="env://", help="url used to set up distributed training")
+    
+    #EDITED
+    parser.add_argument("--save_model", default=None, help="Save model before any training or evaluation")
+    parser.add_argument("--quantization", default=None, help = "Types of quantization")
     return parser
 
 
@@ -306,10 +310,23 @@ def main(args):
     torch.manual_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
-    torch.set_deterministic(True)
+    # torch.set_deterministic(True) #Edited
+    torch.use_deterministic_algorithms(True, warn_only=True)
 
     # Build the model
     model, criterion, contrastive_criterion, qa_criterion, weight_dict = build_model(args)
+
+    #ADDED
+
+    if args.quantization:
+        if args.quantization == 'fp16':
+            print('Running fp16')
+            model = model.half()
+
+    if args.save_model:
+        print(f'Saving full model at {args.save_model}')
+        torch.save(model, args.save_model)        
+
     model.to(device)
 
     assert (
@@ -562,6 +579,7 @@ def main(args):
             # extra checkpoint before LR drop and every 2 epochs
             if (epoch + 1) % args.lr_drop == 0 or (epoch + 1) % 2 == 0:
                 checkpoint_paths.append(output_dir / f"checkpoint{epoch:04}.pth")
+                #SAVING HERE
             for checkpoint_path in checkpoint_paths:
                 dist.save_on_master(
                     {

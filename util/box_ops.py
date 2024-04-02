@@ -47,7 +47,19 @@ def generalized_box_iou(boxes1, boxes2):
     """
     # degenerate boxes gives inf / nan results
     # so do an early check
-    assert (boxes1[:, 2:] >= boxes1[:, :2]).all()
+    # print('boxes1')
+    # print(boxes1.shape)
+    # print(boxes1)
+
+    # assert (boxes1[:, 2:] >= boxes1[:, :2]).all()
+    #EDITED
+    # print('boxes1', boxes1.shape)
+    # print(boxes1)
+
+    if (boxes1[:, 2:] >= boxes1[:, :2]).all():
+        degenerated_boxes = False
+    else: degenerated_boxes = True
+
     assert (boxes2[:, 2:] >= boxes2[:, :2]).all()
     iou, union = box_iou(boxes1, boxes2)
 
@@ -56,8 +68,16 @@ def generalized_box_iou(boxes1, boxes2):
 
     wh = (rb - lt).clamp(min=0)  # [N,M,2]
     area = wh[:, :, 0] * wh[:, :, 1]
+    
+    result = iou - (area - union) / area 
+    # print('giou', result.shape, result)
+    
+    #EDITED
+    if degenerated_boxes:
+        result = torch.zeros_like(result)
+        # print('new_giou', result.shape, result)
 
-    return iou - (area - union) / area
+    return result
 
 
 def masks_to_boxes(masks):

@@ -54,10 +54,18 @@ class HungarianMatcher(nn.Module):
             For each batch element, it holds:
                 len(index_i) = len(index_j) = min(num_queries, num_target_boxes)
         """
+        # print('================NEW PASS==================')
+        if outputs['pred_logits'].isnan().any().item():
+            # print('OUTPUT WITH NAN')
+            for key in ['pred_logits', 'pred_boxes', 'proj_queries', 'proj_tokens']:
+                outputs[key] = torch.zeros_like(outputs[key])
+            # print('GotNAN')
+        else: pass # print('NotNAN')
+        
         bs, num_queries = outputs["pred_logits"].shape[:2]
-
         # We flatten to compute the cost matrices in a batch
         out_prob = self.norm(outputs["pred_logits"].flatten(0, 1))  # [batch_size * num_queries, num_classes]
+        
         out_bbox = outputs["pred_boxes"].flatten(0, 1)  # [batch_size * num_queries, 4]
 
         # Also concat the target labels and boxes
@@ -66,9 +74,27 @@ class HungarianMatcher(nn.Module):
 
         # Compute the soft-cross entropy between the predicted token alignment and the GT one for each box
         cost_class = -(out_prob.unsqueeze(1) * positive_map.unsqueeze(0)).sum(-1)
+    
 
         # Compute the L1 cost between boxes
-        cost_bbox = torch.cdist(out_bbox, tgt_bbox, p=1)
+        # out_bbox_fp32 = 
+        # print(out_bbox)
+        # print(out_bbox.shape)
+        #EDIT HERE
+        # print('fp16 format')
+        # print(out_bbox)
+        # print('----------------------------------------')
+
+        # tgt_bbox = tgt_bbox.float()
+        
+        # print('fp32 format')
+        # print(out_bbox)
+        # print(box_cxcywh_to_xyxy(out_bbox))
+        # print('----------------------------------------')
+
+        out_bbox_fp32 = out_bbox.float()
+
+        cost_bbox = torch.cdist(out_bbox_fp32, tgt_bbox, p=1)
         assert cost_class.shape == cost_bbox.shape
 
         # Compute the giou cost betwen boxes
@@ -80,6 +106,7 @@ class HungarianMatcher(nn.Module):
 
         sizes = [len(v["boxes"]) for v in targets]
         indices = [linear_sum_assignment(c[i]) for i, c in enumerate(C.split(sizes, -1))]
+        
         return [(torch.as_tensor(i, dtype=torch.int64), torch.as_tensor(j, dtype=torch.int64)) for i, j in indices]
 
 
