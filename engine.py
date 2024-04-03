@@ -156,11 +156,23 @@ def evaluate(
         targets = targets_to(targets, device)
 
         memory_cache = None
-        if args.masks:
-            outputs = model(samples, captions)
-        else:
-            memory_cache = model(samples, captions, encode_and_save=True)
-            outputs = model(samples, captions, encode_and_save=False, memory_cache=memory_cache)
+        # EDITED HERE
+        if args.quantization:
+            if args.quantization == 'bf16':
+                data_type = torch.bfloat16
+                
+            with torch.autocast(device_type="cuda", dtype= data_type):
+                if args.masks:
+                    outputs = model(samples, captions)
+                else:
+                    memory_cache = model(samples, captions, encode_and_save=True)
+                    outputs = model(samples, captions, encode_and_save=False, memory_cache=memory_cache)    
+        else:     
+            if args.masks:
+                outputs = model(samples, captions)
+            else:
+                memory_cache = model(samples, captions, encode_and_save=True)
+                outputs = model(samples, captions, encode_and_save=False, memory_cache=memory_cache)
         
         loss_dict = {}
         if criterion is not None:

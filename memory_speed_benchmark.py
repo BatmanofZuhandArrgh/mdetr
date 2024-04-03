@@ -111,9 +111,12 @@ def add_res(results, ax, color='green'):
         print(text)
         ax.text(b[0], b[1], text, fontsize=15, bbox=dict(facecolor='white', alpha=0.8))
 
-def inference(im, caption, model, device):
+def inference(im, caption, model, device, quantization = None):
     # mean-std normalize the input image (batch-size: 1)
     img = transform(im).unsqueeze(0).to(device)
+
+    if quantization == 'fp16':
+        img = img.half()
 
     # propagate through the model
     memory_cache = model(img, [caption], encode_and_save=True)
@@ -127,6 +130,7 @@ def inference(im, caption, model, device):
     bboxes_scaled = rescale_bboxes(outputs['pred_boxes'].cpu()[0, keep], im.size)
 
     # Extract the text spans predicted by each box
+    outputs['pred_logits'] = outputs['pred_logits'].float() 
     positive_tokens = (outputs["pred_logits"].cpu()[0, keep].softmax(-1) > 0.1).nonzero().tolist()
     predicted_spans = defaultdict(str)
     for tok in positive_tokens:
@@ -181,6 +185,9 @@ def main(args):
     model = model.to(device)
     model.eval()
     
+    if args.quantization == 'fp16':
+        model = model.half()
+    
     #Load images
     num_images = 30
     sample_images = sorted(glob('data/val/*.jpg'))[:num_images]
@@ -194,7 +201,7 @@ def main(args):
     start_time = time.time()
     for img_path in tqdm(sample_images):
         im = Image.open(img_path)
-        inference(im, caption, model=model, device=device)
+        inference(im, caption, model=model, device=device, quantization=args.quantization)
         end_gpu_ram = get_GPU_memory()
 
     end_cpu_ram = get_CPU_memory()

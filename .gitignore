@@ -21,3 +21,4 @@ data/*
 weights/*
 flickr30k
 mdetr_annotations/*
+checkpoint/*

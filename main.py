@@ -319,9 +319,11 @@ def main(args):
     #ADDED
 
     if args.quantization:
+        print(f'Running {args.quantization}')
         if args.quantization == 'fp16':
-            print('Running fp16')
             model = model.half()
+
+        # elif args.quantization == 'bfp16'
 
     if args.save_model:
         print(f'Saving full model at {args.save_model}')
