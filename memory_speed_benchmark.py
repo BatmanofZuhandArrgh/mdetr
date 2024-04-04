@@ -63,7 +63,6 @@ def plot_results(pil_img, scores, boxes, labels, masks=None):
     if masks is None:
       masks = [None for _ in range(len(scores))]
 
-
     assert len(scores) == len(boxes) == len(labels) == len(masks)
     for s, (xmin, ymin, xmax, ymax), l, mask, c in zip(scores, boxes.tolist(), labels, masks, colors):
         ax.add_patch(plt.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin,
@@ -115,12 +114,21 @@ def inference(im, caption, model, device, quantization = None):
     # mean-std normalize the input image (batch-size: 1)
     img = transform(im).unsqueeze(0).to(device)
 
-    if quantization == 'fp16':
-        img = img.half()
+    # if quantization == 'fp16':
+    #     img = img.half()
 
     # propagate through the model
-    memory_cache = model(img, [caption], encode_and_save=True)
-    outputs = model(img, [caption], encode_and_save=False, memory_cache=memory_cache)
+    if quantization == 'fp16':
+        data_type = torch.float16
+    elif quantization == 'bf16':
+        data_type = torch.bfloat16
+    elif quantization == 'int8':
+        data_type = torch.int8
+    else: data_type = torch.float32
+    
+    with torch.autocast(device_type=device, dtype= data_type):
+        memory_cache = model(img, [caption], encode_and_save=True)
+        outputs = model(img, [caption], encode_and_save=False, memory_cache=memory_cache)
 
     # keep only predictions with 0.7+ confidence
     probas = 1 - outputs['pred_logits'].softmax(-1)[0, :, -1].cpu()

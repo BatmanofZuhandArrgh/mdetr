@@ -157,11 +157,20 @@ def evaluate(
 
         memory_cache = None
         # EDITED HERE
+        
         if args.quantization:
             if args.quantization == 'bf16':
                 data_type = torch.bfloat16
-                
-            with torch.autocast(device_type="cuda", dtype= data_type):
+                inference_device = 'cpu' #Do not know why this doesn't cause bug, yet adding args.device cpu does 
+            elif args.quantization == 'int8':
+                data_type = torch.int8
+                inference_device = 'cuda'
+
+            elif args.quantization == 'fp16':
+                data_type = torch.float16
+                inference_device = 'cuda'
+
+            with torch.autocast(device_type=inference_device, dtype= data_type):
                 if args.masks:
                     outputs = model(samples, captions)
                 else:

@@ -16,6 +16,7 @@ import torch
 import torch.utils
 from torch.utils.data import ConcatDataset, DataLoader, DistributedSampler
 
+from prune import pruning
 import util.dist as dist
 import util.misc as utils
 from datasets import build_dataset, get_coco_api_from_dataset
@@ -276,7 +277,14 @@ def get_args_parser():
     
     #EDITED
     parser.add_argument("--save_model", default=None, help="Save model before any training or evaluation")
-    parser.add_argument("--quantization", default=None, help = "Types of quantization")
+    parser.add_argument("--quantization", default=None, help = "Types of quantization, can be fp32, fp16 or bf16")
+    
+    parser.add_argument("--pruning", default= None, help = "Types of pruning, either l1 or random")
+    parser.add_argument("--pruning_percentage", default=0.1, help = "float from 0.0 to 1.")
+    
+    parser.add_argument('--replace_LLM', action='store_true', help = 'Replace the text encoder with DistilBERT, a smaller lighter one')
+    parser.add_argument('--finetune_LLM', action='store_true', help = 'Finetune only the text encoder')
+    
     return parser
 
 
@@ -317,9 +325,16 @@ def main(args):
     model, criterion, contrastive_criterion, qa_criterion, weight_dict = build_model(args)
 
     #ADDED
-
+    if args.pruning:
+        print(model)
+        model = pruning(
+            model, 
+            prune_percentage=args.pruning_percentage,
+            prune_type=args.pruning,
+            )
+    
     if args.quantization:
-        print(f'Running {args.quantization}')
+        print(f'Quantization: {args.quantization}')
         if args.quantization == 'fp16':
             model = model.half()
 
@@ -341,8 +356,7 @@ def main(args):
     if args.distributed:
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu], find_unused_parameters=True)
         model_without_ddp = model.module
-    n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print("number of params:", n_parameters)
+
 
     # Set up optimizers
     param_dicts = [
@@ -485,6 +499,29 @@ def main(args):
                 model_ema = deepcopy(model_without_ddp)
             else:
                 model_ema.load_state_dict(checkpoint["model_ema"])
+
+    
+    
+    if args.replace_LLM:
+        from transformers import RobertaModel, RobertaTokenizerFast
+        text_encoder_type = 'roberta-base'
+
+        tokenizer = RobertaTokenizerFast.from_pretrained(text_encoder_type)
+        text_encoder = RobertaModel.from_pretrained(text_encoder_type)     
+        text_encoder = text_encoder.to(device)
+
+        model.transformer.text_encoder = text_encoder
+        print('LLM Replaced')
+
+    if args.finetune_LLM:
+        #Freeze all parameters, except for text_encoder
+        for name, param in model.named_parameters():
+            if 'text_encoder' not in name:
+                param.requires_grad = False
+            print(name, param.requires_grad)
+    
+    n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print("number of params:", n_parameters)
 
     def build_evaluator_list(base_ds, dataset_name):
         """Helper function to build the list of evaluators for a given dataset"""
