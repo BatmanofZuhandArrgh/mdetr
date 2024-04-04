@@ -86,7 +86,7 @@ def get_args_parser():
         "--eval_skip",
         default=1,
         type=int,
-        help='do evaluation every "eval_skip" frames',
+        help='do evaluation every "eval_skip" epoch',
     )
 
     parser.add_argument(
@@ -518,8 +518,9 @@ def main(args):
         for name, param in model.named_parameters():
             if 'text_encoder' not in name:
                 param.requires_grad = False
-            print(name, param.requires_grad)
-    
+            # print(name, param.requires_grad)
+        print('All text_encoder layers are unfrozen. Everything else is')
+
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print("number of params:", n_parameters)
 
@@ -587,6 +588,10 @@ def main(args):
         return
 
     # Runs training and evaluates after every --eval_skip epochs
+
+    # for name, param in model.named_parameters():
+    #     print(name, param.requires_grad)
+
     print("Start training")
     start_time = time.time()
     best_metric = 0.0
